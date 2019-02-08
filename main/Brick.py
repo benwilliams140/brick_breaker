@@ -6,6 +6,16 @@ class Brick:
 		self.height = 40
 		self.teir = teir
 		
+	def isColliding(self, ball):
+		if self.x < ball.getX() + ball.getRadius() and self.x + self.width > ball.getX() - ball.getRadius():
+			if self.y < ball.getY() + ball.getRadius() and self.y + self.height > ball.getY() - ball.getRadius():
+				if self.y < ball.getY() < self.y + self.height:
+					ball.flipDirectionX()
+				else:
+					ball.flipDirectionY()
+				return True
+		return False
+		
 	def getX(self):
 		return self.x
 		
