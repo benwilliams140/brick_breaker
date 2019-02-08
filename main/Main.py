@@ -7,6 +7,7 @@ import sys
 from Brick import Brick
 from Ball import Ball
 from Paddle import Paddle
+from Button import Button
 
 class Main:
 	def __init__(self):
@@ -22,30 +23,45 @@ class Main:
 		self.level = "levels/level_test.csv"
 		self.level_map = []
 		
+		#state of the game
+		self.game_state = "MENU"
+		
+		self.menu_objects = {}
+		self.menu_objects["playButton"] = Button(self.width / 2 - 75, self.height - 255, 150, 50, "Play Game")
+		self.menu_objects["selectLevelButton"] = Button(self.width / 2 - 75, self.height - 200, 150, 50, "Select Level")
+		self.menu_objects["instructionsButton"] = Button(self.width / 2 - 75, self.height - 145, 150, 50, "Instructions")
+		self.menu_objects["backButton"] = Button(5, self.height - 55, 150, 50, "Back")
+		
 		#initializes variables for bricks
 		self.bricks = []
 		
-		#initializes variables for paddle
-		paddleWidth = 200
-		paddleHeight = 20
-		paddleX = self.width / 2 - paddleWidth / 2
-		paddleY = self.height - paddleHeight - 10
-		paddleVelocity = 8
-		self.paddle = Paddle(paddleX, paddleY, paddleWidth, paddleHeight, paddleVelocity, self.width)
+		self.initPaddle()
+		self.initBall()
 		
-		#initializes variables for ball
-		ballRadius = 15
-		ballX = self.width / 2 - ballRadius
-		ballY = paddleY - ballRadius * 2
-		ballVelocityX = random.randint(3, 7)
-		if random.randint(0, 2) == 0:
-			ballVelocityX *= -1
-		ballVelocityY = random.randint(3, 8) * -1
-		self.ball = Ball(self.paddle, ballX, ballY, ballRadius, ballVelocityX, ballVelocityY, self.width, self.height)
+		self.paddle = Paddle(self.paddleX, self.paddleY, self.paddleWidth, self.paddleHeight, self.paddleVelocity, self.width)
+		self.ball = Ball(self.paddle, self.ballX, self.ballY, self.ballRadius, self.ballVelocityX, self.ballVelocityY, self.width, self.height)
 		
 		#initializes the screen
 		self.screen = pygame.display.set_mode((self.width, self.height))
 
+	def initPaddle(self):
+		#initializes variables for paddle
+		self.paddleWidth = 200
+		self.paddleHeight = 20
+		self.paddleX = self.width / 2 - self.paddleWidth / 2
+		self.paddleY = self.height - self.paddleHeight - 10
+		self.paddleVelocity = 4
+		
+	def initBall(self):
+		#initializes variables for ball
+		self.ballRadius = 15
+		self.ballX = self.width / 2 - self.ballRadius
+		self.ballY = self.paddleY - self.ballRadius * 2
+		self.ballVelocityX = random.randint(4, 7)
+		if random.randint(0, 1) == 0:
+			self.ballVelocityX *= -1
+		self.ballVelocityY = random.randint(5, 7) * -1
+		
 	def getInput(self):
 		#loops through all of the events received
 		events = pygame.event.get()
@@ -91,37 +107,73 @@ class Main:
 					self.bricks.append(Brick(brickX, brickY, brickTier))
 		
 	def update(self):
-		#updates the paddle position
-		self.paddle.updatePosition()
-		self.ball.updatePosition()
+		#tests which game state the game is in
+		if self.game_state == "PLAYING":
+			#updates the paddle position
+			self.paddle.update()
+			self.ball.update()
 		
-		if self.ball.getRunning() == False:
-			self.end()
+			if self.ball.getRunning() == False:
+				self.game_state = "MENU"
+				self.reset()
+				
+			for brick in self.bricks:
+				if brick.isColliding(self.ball):
+					self.bricks.remove(brick)
 		
-		self.paddle.setDirection("null")
+			self.paddle.setDirection("null")
+		elif self.game_state == "MENU":
+			#tests if buttons are clicked
+			if self.menu_objects["playButton"].isClicked():
+				self.game_state = "PLAYING"
+			elif self.menu_objects["selectLevelButton"].isClicked():
+				self.game_state = "SELECT LEVEL"
+			elif self.menu_objects["instructionsButton"].isClicked():
+				self.game_state = "INSTRUCTIONS"
+		elif self.game_state == "INSTRUCTIONS" or self.game_state == "SELECT LEVEL":
+			if self.menu_objects["backButton"].isClicked():
+				self.game_state = "MENU"
 		
 	def render(self):
 		#creates a background for the game
-		self.screen.fill((255, 255, 255))
+		self.screen.fill((0, 0, 0))
+	
+		#tests which game state the game is in
+		if self.game_state == "PLAYING":
+			#loops through the bricks array and draws each brick to the screen
+			for i in range(len(self.bricks)):
+				pygame.draw.rect(self.screen, (200, 100, 100), (self.bricks[i].getX(), self.bricks[i].getY(), self.bricks[i].getWidth(), self.bricks[i].getHeight()))
 		
-		#loops through the bricks array and draws each brick to the screen
-		for i in range(len(self.bricks)):
-			pygame.draw.rect(self.screen, (200, 100, 100), (self.bricks[i].getX(), self.bricks[i].getY(), self.bricks[i].getWidth(), self.bricks[i].getHeight()))
-		
-		#draws the paddle to the screen
-		pygame.draw.rect(self.screen, (0, 0, 0), (self.paddle.getX(), self.paddle.getY(), self.paddle.getWidth(), self.paddle.getHeight()))
-		
-		#draws the ball to the screen
-		pygame.draw.circle(self.screen, (0, 0, 0), (int(self.ball.getX()), int(self.ball.getY())), self.ball.getRadius())
+			#draws the paddle to the screen
+			self.paddle.render(self.screen)
+			
+			#draws the ball to the screen
+			self.ball.render(self.screen)
+		elif self.game_state == "MENU":
+			#draws the menu elements to the screen
+			self.menu_objects["playButton"].render(self.screen)
+			self.menu_objects["selectLevelButton"].render(self.screen)
+			self.menu_objects["instructionsButton"].render(self.screen)
+		elif self.game_state == "INSTRUCTIONS":
+			self.menu_objects["backButton"].render(self.screen)
+		elif self.game_state == "SELECT LEVEL":
+			self.menu_objects["backButton"].render(self.screen)
 		
 		#updates the screen
 		pygame.display.update()
+	
+	def reset(self):
+		self.loadLevel()
 		
+		self.initBall()
+		self.initPaddle()
+		
+		self.ball.reset(self.ballX, self.ballY, self.ballVelocityX, self.ballVelocityY)
+		self.paddle.reset(self.paddleX)
+	
 	def main(self):
 		#loads the level and prints contents to the console
 		self.loadLevel()
-		print(self.level_map)
-		print(self.bricks)
 	
 		#main game loop
 		while self.running:
