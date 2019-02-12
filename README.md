@@ -1,6 +1,10 @@
 # brick_breaker
 This is a remake of the Brick Breaker Game created with Python using Pygame.  Currently a work in progress.
 
+# Usage
+Navigate to the file location of the Main.py class using the command line.  Compile and run the program by using the following code:
+py Main.py
+
 # FINISHED:
 - Paddle movement
 - Ball movement
